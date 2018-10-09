@@ -1,7 +1,23 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+Backbone.$ = $;
+import "webpack-jquery-ui/slider";
+
+import "../css/ui/flashblock.css";
+import "../css/ui/style.css";
+
+import ScratchpadConfig from "./shared/config.js";
+import ScratchpadDrawCanvas from "./ui/canvas.js";
+import ScratchpadRecord from "./shared/record.js";
+import TipBar from "./ui/tipbar.js";
+
+import liveEditorTemplate from "../tmpl/live-editor.handlebars";
+
 // TODO(kevinb) remove after challenges have been converted to use i18n._
 $._ = i18n._;
 
-window.LiveEditor = Backbone.View.extend({
+const LiveEditor = Backbone.View.extend({
     dom: {
         DRAW_CANVAS: ".scratchpad-draw-canvas",
         DRAW_COLOR_BUTTONS: "#draw-widgets a.draw-color-button",
@@ -103,14 +119,6 @@ window.LiveEditor = Backbone.View.extend({
                 }
             }.bind(this)
         });
-
-        // TEMP: Set up a query param for testing the new error experience
-        // Looks to see if "new_error_experience=yes" is in the url,
-        //  if it is, then we use the new error buddy behaviour.
-        this.newErrorExperience = options.newErrorExperience;
-        if (window.location.search.indexOf("new_error_experience=yes") !== -1) {
-            this.newErrorExperience = true;
-        }
 
         if (options.enableLoopProtect != null) {
             this.enableLoopProtect = options.enableLoopProtect;
@@ -221,7 +229,7 @@ window.LiveEditor = Backbone.View.extend({
     },
 
     render: function() {
-        this.$el.html(Handlebars.templates["live-editor"]({
+        this.$el.html(liveEditorTemplate({
             execFile: this.execFile,
             imagesDir: this.imagesDir,
             colors: this.colors
@@ -1115,7 +1123,7 @@ window.LiveEditor = Backbone.View.extend({
             }
         }
 
-        if (this.newErrorExperience && this.errorState.length === 0) {
+        if (this.errorState.length === 0) {
             this.setHappyState();
         }
 
@@ -1177,12 +1185,7 @@ window.LiveEditor = Backbone.View.extend({
     showError: null,
 
     handleErrors: function(errors) {
-        if (!this.newErrorExperience) {
-            this.tipbar.toggleErrors(errors, 1500);
-            return;
-        }
-        // New Error Experience:
-
+        // Our new, less-aggressive way of handling errors:
         // We want to check if the errors we see are caused by the line the
         // user is currently on, and that they have just typed them, and if so
         // give the user some time to finish what they were typing.
@@ -1397,10 +1400,6 @@ window.LiveEditor = Backbone.View.extend({
         // the state was dirty.
         // If runCode takes more than 500ms then runDone will be called and we
         // set the state back to "clean".
-
-        if (!this.newErrorExperience) {
-            this.tipbar.hide();
-        }
 
         if (this.outputState === "clean") {
             // We will run at the end of this code block
@@ -1662,3 +1661,5 @@ window.LiveEditor = Backbone.View.extend({
 LiveEditor.registerEditor = function(name, editor) {
     LiveEditor.prototype.editors[name] = editor;
 };
+
+export default LiveEditor;
