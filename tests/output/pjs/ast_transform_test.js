@@ -11,7 +11,7 @@ var cleanupCode = function(code) {
 };
 
 describe("AST Transforms", function () {
-    var transformCode = function(code) {
+    var transformCode = function(code, opts) {
         var context = {
             ellipse: function() {},
             console: {
@@ -24,7 +24,7 @@ describe("AST Transforms", function () {
 
         var injector = new PJSCodeInjector({ processing: context });
 
-        return injector.transformCode(code, context);
+        return injector.transformCode(code, context, undefined, opts || { preserveUserCode: false });
     };
 
     it("should handle 'for' loops with variable declarations", function () {
@@ -241,6 +241,62 @@ describe("AST Transforms", function () {
 
         expect(expectedCode).to.equal(transformedCode);
     });
+
+    it("function toString transformation", function() {
+        var transformedCode = transformCode(getCodeFromOptions(function() {
+            var F = function() {
+                this.e = 20;
+            };
+
+            F.prototype.incr = function() {
+                this.e += 1;
+            };
+        }), {});
+
+        var expectedCode = cleanupCode(getCodeFromOptions(function() {
+            __env__.F = function () {
+                var KAFunctionTemp = function () {
+                    this.e = 20;
+                };
+                KAFunctionTemp.toString = function () {
+                    return 'function() {\n                this.e = 20;\n            }';
+                };
+                return KAFunctionTemp;
+            }();
+            __env__.F.prototype.incr = function () {
+                var KAFunctionTemp = function () {
+                    this.e += 1;
+                };
+                KAFunctionTemp.toString = function () {
+                    return 'function() {\n                this.e += 1;\n            }';
+                };
+                return KAFunctionTemp;
+            }();
+        }));
+
+        expect(expectedCode).to.equal(transformedCode);
+    });
+
+    it("function toString transformation same line", function() {
+        var transformedCode = transformCode(getCodeFromOptions(function() {
+                    fill(0);  text(function() {/* AAAAAA */}, 100, 100);
+        }), {});
+
+        var expectedCode = cleanupCode(getCodeFromOptions(function() {
+            fill(0);
+            text(function () {
+                var KAFunctionTemp = function () {
+                };
+                KAFunctionTemp.toString = function () {
+                    return 'function() {/* AAAAAA */}';
+                };
+                return KAFunctionTemp;
+            }(), 100, 100);
+        }));
+
+        expect(expectedCode).to.equal(transformedCode);
+    });
+
 
     it("should substitute all 'NewExpression's with 'CallExpression's to '__env__.PJSCodeInjector.applyInstance'", function() {
         var transformedCode = transformCode(getCodeFromOptions(function() {
