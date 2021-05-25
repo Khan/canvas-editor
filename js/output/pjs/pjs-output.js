@@ -166,6 +166,9 @@ window.PJSOutput = Backbone.View.extend({
     build: function(canvas, enableLoopProtect, loopProtectTimeouts) {
         this.processing = new Processing(canvas, (instance) => {
             instance.draw = this.DUMMY;
+            if (this.options.logFullScreen) {
+              instance.println("FULLSCREENLOG");
+            }
         });
 
         // The reason why we're passing the whole "output" object instead of
